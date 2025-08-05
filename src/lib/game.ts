@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export type Vote = number | null;
+export type Vote = number | "🐘" | null;
 
 export type PlayerID = string;
 

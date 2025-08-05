@@ -10,7 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
-import type { GameState } from "@/lib/game";
+import type { GameState, Vote } from "@/lib/game";
 import { FaRegCopy } from "react-icons/fa";
 import { Button } from "@/components/ui/button";
 
@@ -141,33 +141,30 @@ export const Game = ({
   sendClearVotes,
   self,
 }: ReturnType<typeof usePeerJsPointingGame>) => {
-  // Calculate vote statistics
-  const votes = Object.values(gameState.players)
+  const allVotes = Object.values(gameState.players)
     .map((player) => player.vote)
-    .filter((vote): vote is number => vote !== null);
+    .filter((vote) => vote !== null);
 
-  const voteAverage = votes.length
-    ? (votes.reduce((sum, vote) => sum + vote, 0) / votes.length).toFixed(1)
+  const numericVotes = allVotes.filter((vote) => typeof vote === "number");
+  const voteAverage = numericVotes.length
+    ? (
+        numericVotes.reduce((sum, vote) => sum + vote, 0) / numericVotes.length
+      ).toFixed(1)
     : "-";
 
   // Count votes for distribution
-  const voteCounts: Record<number, number> = {};
-  const possibleVotes = [1, 2, 3, 5, 8, 13];
-  possibleVotes.forEach((v) => {
-    voteCounts[v] = 0;
-  });
-  votes.forEach((vote) => {
-    if (vote in voteCounts) voteCounts[vote]++;
-  });
+  const possibleVotes: Exclude<Vote, null>[] = [1, 2, 3, 5, 8, 13, "🐘"];
+  const voteCounts = Object.fromEntries(possibleVotes.map((vote) => [vote, 0]));
+  allVotes.forEach((vote) => voteCounts[vote]++);
 
   // Find closest standard point value
-  const closestPointValue = votes.length
-    ? possibleVotes.reduce((closest, current) => {
+  const closestPointValue = numericVotes.length
+    ? numericVotes.reduce((closest, current) => {
         const avgNumber = parseFloat(voteAverage);
         return Math.abs(current - avgNumber) < Math.abs(closest - avgNumber)
           ? current
           : closest;
-      }, possibleVotes[0])
+      }, numericVotes[0])
     : "-";
 
   return (
@@ -295,7 +292,7 @@ export const Game = ({
                       <div
                         className={`flex h-full items-center justify-end transition-[width] ${gameState.votesVisible && voteCounts[value] > 0 ? "bg-blue-500 px-2" : ""}`}
                         style={{
-                          width: `${votes.length && gameState.votesVisible && voteCounts[value] > 0 ? (voteCounts[value] / votes.length) * 100 : 0}%`,
+                          width: `${allVotes.length && gameState.votesVisible && voteCounts[value] > 0 ? (voteCounts[value] / allVotes.length) * 100 : 0}%`,
                         }}
                       >
                         {gameState.votesVisible && voteCounts[value] > 0 && (
